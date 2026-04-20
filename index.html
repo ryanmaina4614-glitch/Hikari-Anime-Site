@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hikari Home</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&family=Noto+Sans+JP&display=swap" rel="stylesheet">
+
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="brand">
+    <img src="logo.png.jpeg" alt="Hikari Anime logo" class="logo-img">
+  </a>
+
+  <div class="nav-links">
+    <a href="index.html" data-i18n="nav.home">Home</a>
+    <a href="trending.html" data-i18n="nav.trending">Trending 🔥</a>
+    <a href="upcoming.html" data-i18n="nav.upcoming">Upcoming ⏳</a>
+    <a href="anime.html" data-i18n="nav.anime">Anime 🎬</a>
+    <a href="manga.html" data-i18n="nav.manga">Manga 📚</a>
+    <a href="favorites.html" data-i18n="nav.favorites">Favorites ⭐</a>
+    <a href="login.html" data-i18n="nav.login">Login</a>
+    <a href="signup.html" data-i18n="nav.signup">Sign Up</a>
+    <a href="settings.html" data-i18n="nav.settings">Settings</a>
+  </div>
+</nav>
+<header class="hero home-hero">
+  <div class="hero-content">
+    <img
+      src="logo.png.jpeg"
+      alt="Hikari Anime"
+      class="hero-logo"
+      width="1024"
+      height="682"
+      decoding="async"
+      fetchpriority="high"
+    >
+    <h2 data-i18n="home.title">Welcome to Hikari Anime</h2>
+    <p data-i18n="home.subtitle">Discover top anime, explore manga, and personalize your watch journey.</p>
+    <div class="settings-actions">
+      <a href="anime.html"><button type="button" data-i18n="home.browseAnime">Browse Anime</button></a>
+      <a href="manga.html"><button type="button" data-i18n="home.browseManga">Browse Manga</button></a>
+    </div>
+  </div>
+</header>
+
+<section class="details">
+  <h3 data-i18n="home.whatYouCanDo">What you can do</h3>
+  <p data-i18n="home.infoOne">Use the Anime page for search, top lists, favorites, and learning mode.</p>
+  <p data-i18n="home.infoTwo">Use the Settings page to control theme, trailers, and account preferences.</p>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings | Hikari Anime</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&family=Noto+Sans+JP&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="brand">
+    <img src="logo.png.jpeg" alt="Hikari Anime logo" class="logo-img">
+  </a>
+  <div class="nav-links">
+    <a href="index.html" data-i18n="nav.home">Home</a>
+    <a href="trending.html" data-i18n="nav.trending">Trending 🔥</a>
+    <a href="upcoming.html" data-i18n="nav.upcoming">Upcoming ⏳</a>
+    <a href="anime.html" data-i18n="nav.anime">Anime 🎬</a>
+    <a href="manga.html" data-i18n="nav.manga">Manga 📚</a>
+    <a href="favorites.html" data-i18n="nav.favorites">Favorites ⭐</a>
+    <a href="login.html" data-i18n="nav.login">Login</a>
+    <a href="signup.html" data-i18n="nav.signup">Sign Up</a>
+    <a href="settings.html" data-i18n="nav.settings">Settings</a>
+  </div>
+</nav>
+
+<section class="settings-wrap">
+  <div class="settings-card">
+    <h2 data-i18n="settings.title">Settings</h2>
+    <p class="settings-subtitle" data-i18n="settings.subtitle">Customize your Hikari Anime experience.</p>
+
+    <form id="settingsForm" class="settings-form">
+      <div class="profile-section" aria-label="Profile settings">
+        <h3 class="section-title">Profile</h3>
+        <p class="settings-subtitle" id="profileEmail"></p>
+
+        <div class="profile-grid">
+          <div class="avatar-box">
+            <img id="profileAvatarPreview" class="avatar-preview" alt="Profile picture preview" />
+            <input id="profileAvatar" type="file" accept="image/*" class="avatar-input" />
+            <div class="avatar-actions">
+              <button type="button" id="removeAvatarBtn">Remove picture</button>
+            </div>
+          </div>
+
+          <div class="profile-fields">
+            <label for="profileUsername">Username</label>
+            <input id="profileUsername" name="profileUsername" type="text" maxlength="24" placeholder="e.g. hikariFan" />
+
+            <label for="profileDisplayName">Display name</label>
+            <input id="profileDisplayName" name="profileDisplayName" type="text" maxlength="40" placeholder="e.g. Sakura" />
+
+            <label for="profileBio">Bio</label>
+            <textarea id="profileBio" name="profileBio" rows="3" maxlength="180" placeholder="Tell us a bit about you..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <label class="settings-toggle">
+        <input type="checkbox" id="settingLearningMode">
+        <span data-i18n="settings.learningMode">Enable Learning Mode (show Japanese titles)</span>
+      </label>
+
+      <label class="settings-toggle">
+        <input type="checkbox" id="settingTrailers">
+        <span data-i18n="settings.trailers">Show trailer preview on anime cards</span>
+      </label>
+
+      <label class="settings-toggle">
+        <input type="checkbox" id="settingLightTheme">
+        <span data-i18n="settings.lightTheme">Use Light Theme</span>
+      </label>
+
+      <label for="settingLanguage" data-i18n="settings.language">App Language</label>
+      <select id="settingLanguage" class="settings-select">
+        <option value="en" data-i18n="settings.languageEnglish">English</option>
+        <option value="ja" data-i18n="settings.languageJapanese">Japanese</option>
+        <option value="es" data-i18n="settings.languageSpanish">Spanish</option>
+        <option value="fr" data-i18n="settings.languageFrench">French</option>
+        <option value="sw" data-i18n="settings.languageSwahili">Swahili</option>
+      </select>
+
+      <div class="settings-actions">
+        <button type="submit" data-i18n="settings.save">Save Settings</button>
+        <button type="button" id="clearFavoritesBtn" data-i18n="settings.clearFavorites">Clear Favorites</button>
+        <button type="button" id="logoutBtn" data-i18n="settings.logout">Logout</button>
+      </div>
+    </form>
+
+    <p id="settingsMessage" class="auth-message"></p>
+  </div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>

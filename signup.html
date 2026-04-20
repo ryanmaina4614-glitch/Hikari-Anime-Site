@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up | Hikari Anime</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&family=Noto+Sans+JP&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="brand">
+    <img src="logo.png.jpeg" alt="Hikari Anime logo" class="logo-img">
+  </a>
+  <div class="nav-links">
+    <a href="index.html" data-i18n="nav.home">Home</a>
+    <a href="trending.html" data-i18n="nav.trending">Trending 🔥</a>
+    <a href="upcoming.html" data-i18n="nav.upcoming">Upcoming ⏳</a>
+    <a href="anime.html" data-i18n="nav.anime">Anime 🎬</a>
+    <a href="manga.html" data-i18n="nav.manga">Manga 📚</a>
+    <a href="favorites.html" data-i18n="nav.favorites">Favorites ⭐</a>
+    <a href="login.html" data-i18n="nav.login">Login</a>
+    <a href="signup.html" data-i18n="nav.signup">Sign Up</a>
+    <a href="settings.html" data-i18n="nav.settings">Settings</a>
+  </div>
+</nav>
+
+<section class="auth-wrap">
+  <div class="auth-card">
+    <h2>Create Account</h2>
+    <p class="auth-subtitle">Save favorites and personalize your experience.</p>
+
+    <form id="signupForm" class="auth-form">
+      <label for="signupName">Name</label>
+      <input id="signupName" name="name" type="text" required placeholder="Your name">
+
+      <label for="signupEmail">Email</label>
+      <input id="signupEmail" name="email" type="email" required placeholder="you@example.com">
+
+      <label for="signupPassword">Password</label>
+      <input id="signupPassword" name="password" type="password" minlength="6" required placeholder="At least 6 characters">
+
+      <button type="submit">Sign Up</button>
+    </form>
+
+    <p id="signupMessage" class="auth-message"></p>
+    <p class="auth-switch">Already have an account? <a href="login.html">Log in</a></p>
+  </div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
