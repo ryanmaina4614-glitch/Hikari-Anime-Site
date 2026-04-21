@@ -10,6 +10,7 @@ let heroInterval;
 
 let learningMode = localStorage.getItem("learningMode") === "true";
 let showTrailers = localStorage.getItem("showTrailers") !== "false";
+let familyMode = localStorage.getItem("familyMode") === "true";
 let currentTheme = localStorage.getItem("theme") || "dark";
 let currentLanguage = localStorage.getItem("language") || "en";
 
@@ -36,7 +37,9 @@ function applyNavAuthVisibility() {
   const authed = isAuthenticated();
   document.querySelectorAll(".nav-links a[data-i18n]").forEach(a => {
     const key = a.dataset.i18n;
-    const allowWhenLoggedOut = key === "nav.home" || key === "nav.login" || key === "nav.signup";
+    const allowWhenLoggedOut =
+      key === "nav.home" ||
+      key === "nav.settings";
     if (!authed && !allowWhenLoggedOut) a.style.display = "none";
     if (authed) a.style.display = "";
   });
@@ -49,12 +52,13 @@ function applyLoggedOutLinkGuard() {
   const protectedPages = new Set([
     "anime.html",
     "manga.html",
+    "movies.html",
+    "tv-shows.html",
     "favorites.html",
     "details.html",
     "manga-details.html",
     "trending.html",
-    "upcoming.html",
-    "settings.html"
+    "upcoming.html"
   ]);
 
   document.addEventListener("click", event => {
@@ -82,7 +86,7 @@ function getCurrentUser() {
 (() => {
   const authed = isAuthenticated();
   const page = getCurrentPageName().toLowerCase();
-  const allowlist = new Set(["index.html", "login.html", "signup.html"]);
+  const allowlist = new Set(["index.html", "login.html", "signup.html", "settings.html"]);
   if (!authed && !allowlist.has(page)) {
     window.location.replace("index.html");
   }
@@ -97,6 +101,8 @@ const isFavorites = document.getElementById("favGrid");
 const isLoginPage = document.getElementById("loginForm");
 const isSignupPage = document.getElementById("signupForm");
 const isSettingsPage = document.getElementById("settingsForm");
+const isMoviesPage = document.getElementById("moviesGrid");
+const isTvShowsPage = document.getElementById("tvShowsGrid");
 const isAnimePage = document.getElementById("hero") && document.getElementById("search") && document.getElementById("grid");
 
 function applyTheme(theme) {
@@ -114,6 +120,8 @@ const translations = {
     "nav.upcoming": "Upcoming ⏳",
     "nav.anime": "Anime 🎬",
     "nav.manga": "Manga 📚",
+    "nav.movies": "Movies 🎥",
+    "nav.tvShows": "TV Shows 📺",
     "nav.favorites": "Favorites ⭐",
     "nav.login": "Login",
     "nav.signup": "Sign Up",
@@ -126,6 +134,8 @@ const translations = {
     "home.subtitle": "Discover top anime, explore manga, and personalize your watch journey.",
     "home.browseAnime": "Browse Anime",
     "home.browseManga": "Browse Manga",
+    "home.browseMovies": "Trending Movies",
+    "home.browseTvShows": "Trending TV Shows",
     "home.whatYouCanDo": "What you can do",
     "home.infoOne": "Use the Anime page for search, top lists, favorites, and learning mode.",
     "home.infoTwo": "Use the Settings page to control theme, trailers, and account preferences.",
@@ -136,6 +146,7 @@ const translations = {
     "settings.subtitle": "Customize your Hikari Anime experience.",
     "settings.learningMode": "Enable Learning Mode (show Japanese titles)",
     "settings.trailers": "Show trailer preview on anime cards",
+    "settings.familyMode": "Enable Family Mode (hide age-restricted content)",
     "settings.lightTheme": "Use Light Theme",
     "settings.language": "App Language",
     "settings.languageEnglish": "English",
@@ -145,7 +156,11 @@ const translations = {
     "settings.languageSwahili": "Swahili",
     "settings.save": "Save Settings",
     "settings.clearFavorites": "Clear Favorites",
-    "settings.logout": "Logout"
+    "settings.logout": "Logout",
+    "movies.title": "Trending Movies",
+    "movies.subtitle": "The most popular movies right now.",
+    "tv.title": "Trending TV Shows",
+    "tv.subtitle": "The most popular TV shows right now."
   },
   ja: {
     "nav.home": "ホーム",
@@ -153,6 +168,8 @@ const translations = {
     "nav.upcoming": "今後 ⏳",
     "nav.anime": "アニメ 🎬",
     "nav.manga": "マンガ 📚",
+    "nav.movies": "映画 🎥",
+    "nav.tvShows": "テレビ番組 📺",
     "nav.favorites": "お気に入り ⭐",
     "nav.login": "ログイン",
     "nav.signup": "新規登録",
@@ -165,6 +182,8 @@ const translations = {
     "home.subtitle": "人気アニメを見つけて、マンガを探して、視聴体験をカスタマイズしましょう。",
     "home.browseAnime": "アニメを見る",
     "home.browseManga": "マンガを見る",
+    "home.browseMovies": "人気映画",
+    "home.browseTvShows": "人気テレビ番組",
     "home.whatYouCanDo": "できること",
     "home.infoOne": "Animeページでは検索、ランキング、お気に入り、学習モードが使えます。",
     "home.infoTwo": "Settingsページではテーマ、トレーラー、アカウント設定を変更できます。",
@@ -175,6 +194,7 @@ const translations = {
     "settings.subtitle": "Hikari Animeの体験をカスタマイズしましょう。",
     "settings.learningMode": "学習モードを有効化（日本語タイトルを表示）",
     "settings.trailers": "アニメカードに予告編プレビューを表示",
+    "settings.familyMode": "ファミリーモードを有効化（年齢制限コンテンツを非表示）",
     "settings.lightTheme": "ライトテーマを使用",
     "settings.language": "アプリの言語",
     "settings.languageEnglish": "英語",
@@ -184,7 +204,11 @@ const translations = {
     "settings.languageSwahili": "スワヒリ語",
     "settings.save": "設定を保存",
     "settings.clearFavorites": "お気に入りをクリア",
-    "settings.logout": "ログアウト"
+    "settings.logout": "ログアウト",
+    "movies.title": "人気の映画",
+    "movies.subtitle": "いま人気の映画をチェック。",
+    "tv.title": "人気のテレビ番組",
+    "tv.subtitle": "いま人気のテレビ番組をチェック。"
   },
   es: {
     "nav.home": "Inicio",
@@ -192,6 +216,8 @@ const translations = {
     "nav.upcoming": "Próximamente ⏳",
     "nav.anime": "Anime 🎬",
     "nav.manga": "Manga 📚",
+    "nav.movies": "Peliculas 🎥",
+    "nav.tvShows": "Series 📺",
     "nav.favorites": "Favoritos ⭐",
     "nav.login": "Iniciar sesion",
     "nav.signup": "Registrarse",
@@ -204,6 +230,8 @@ const translations = {
     "home.subtitle": "Descubre animes populares, explora manga y personaliza tu experiencia.",
     "home.browseAnime": "Explorar Anime",
     "home.browseManga": "Explorar Manga",
+    "home.browseMovies": "Peliculas en tendencia",
+    "home.browseTvShows": "Series en tendencia",
     "home.whatYouCanDo": "Que puedes hacer",
     "home.infoOne": "Usa la pagina Anime para buscar, ver rankings, favoritos y modo aprendizaje.",
     "home.infoTwo": "Usa Configuracion para cambiar tema, avances y preferencias de cuenta.",
@@ -214,6 +242,7 @@ const translations = {
     "settings.subtitle": "Personaliza tu experiencia en Hikari Anime.",
     "settings.learningMode": "Activar modo aprendizaje (mostrar titulos japoneses)",
     "settings.trailers": "Mostrar vista previa de trailers en tarjetas de anime",
+    "settings.familyMode": "Activar modo familiar (ocultar contenido con restriccion de edad)",
     "settings.lightTheme": "Usar tema claro",
     "settings.language": "Idioma de la aplicacion",
     "settings.languageEnglish": "Ingles",
@@ -223,7 +252,11 @@ const translations = {
     "settings.languageSwahili": "Suajili",
     "settings.save": "Guardar ajustes",
     "settings.clearFavorites": "Limpiar favoritos",
-    "settings.logout": "Cerrar sesion"
+    "settings.logout": "Cerrar sesion",
+    "movies.title": "Peliculas en tendencia",
+    "movies.subtitle": "Las peliculas mas populares en este momento.",
+    "tv.title": "Series en tendencia",
+    "tv.subtitle": "Las series de TV mas populares en este momento."
   },
   fr: {
     "nav.home": "Accueil",
@@ -231,6 +264,8 @@ const translations = {
     "nav.upcoming": "À venir ⏳",
     "nav.anime": "Anime 🎬",
     "nav.manga": "Manga 📚",
+    "nav.movies": "Films 🎥",
+    "nav.tvShows": "Series TV 📺",
     "nav.favorites": "Favoris ⭐",
     "nav.login": "Connexion",
     "nav.signup": "Inscription",
@@ -243,6 +278,8 @@ const translations = {
     "home.subtitle": "Decouvrez les meilleurs animes, explorez le manga et personnalisez votre experience.",
     "home.browseAnime": "Voir les animes",
     "home.browseManga": "Voir les mangas",
+    "home.browseMovies": "Films tendance",
+    "home.browseTvShows": "Series TV tendance",
     "home.whatYouCanDo": "Ce que vous pouvez faire",
     "home.infoOne": "Utilisez la page Anime pour la recherche, les tops, les favoris et le mode apprentissage.",
     "home.infoTwo": "Utilisez Parametres pour gerer le theme, les bandes-annonces et le compte.",
@@ -253,6 +290,7 @@ const translations = {
     "settings.subtitle": "Personnalisez votre experience Hikari Anime.",
     "settings.learningMode": "Activer le mode apprentissage (afficher les titres japonais)",
     "settings.trailers": "Afficher l'aperçu des bandes-annonces sur les cartes anime",
+    "settings.familyMode": "Activer le mode famille (masquer le contenu limite d'age)",
     "settings.lightTheme": "Utiliser le theme clair",
     "settings.language": "Langue de l'application",
     "settings.languageEnglish": "Anglais",
@@ -262,7 +300,11 @@ const translations = {
     "settings.languageSwahili": "Swahili",
     "settings.save": "Enregistrer",
     "settings.clearFavorites": "Vider les favoris",
-    "settings.logout": "Se deconnecter"
+    "settings.logout": "Se deconnecter",
+    "movies.title": "Films tendance",
+    "movies.subtitle": "Les films les plus populaires du moment.",
+    "tv.title": "Series TV tendance",
+    "tv.subtitle": "Les series TV les plus populaires du moment."
   },
   sw: {
     "nav.home": "Nyumbani",
@@ -270,6 +312,8 @@ const translations = {
     "nav.upcoming": "Zinazokuja ⏳",
     "nav.anime": "Anime 🎬",
     "nav.manga": "Manga 📚",
+    "nav.movies": "Filamu 🎥",
+    "nav.tvShows": "Vipindi vya TV 📺",
     "nav.favorites": "Vipendwa ⭐",
     "nav.login": "Ingia",
     "nav.signup": "Jisajili",
@@ -282,6 +326,8 @@ const translations = {
     "home.subtitle": "Gundua anime maarufu, chunguza manga, na boresha uzoefu wako.",
     "home.browseAnime": "Vinjari Anime",
     "home.browseManga": "Vinjari Manga",
+    "home.browseMovies": "Filamu Zinazovuma",
+    "home.browseTvShows": "Vipindi vya TV Vinavyovuma",
     "home.whatYouCanDo": "Unachoweza kufanya",
     "home.infoOne": "Tumia ukurasa wa Anime kwa utafutaji, orodha bora, vipendwa na hali ya kujifunza.",
     "home.infoTwo": "Tumia Mipangilio kubadilisha mandhari, trela na mapendeleo ya akaunti.",
@@ -292,6 +338,7 @@ const translations = {
     "settings.subtitle": "Binafsisha matumizi yako ya Hikari Anime.",
     "settings.learningMode": "Washa hali ya kujifunza (onyesha majina ya Kijapani)",
     "settings.trailers": "Onyesha muhtasari wa trela kwenye kadi za anime",
+    "settings.familyMode": "Washa Family Mode (ficha maudhui yenye kikomo cha umri)",
     "settings.lightTheme": "Tumia mandhari nyepesi",
     "settings.language": "Lugha ya Programu",
     "settings.languageEnglish": "Kiingereza",
@@ -301,7 +348,11 @@ const translations = {
     "settings.languageSwahili": "Kiswahili",
     "settings.save": "Hifadhi Mipangilio",
     "settings.clearFavorites": "Futa Vipendwa",
-    "settings.logout": "Toka"
+    "settings.logout": "Toka",
+    "movies.title": "Filamu Zinazovuma",
+    "movies.subtitle": "Filamu maarufu zaidi kwa sasa.",
+    "tv.title": "Vipindi vya TV Vinavyovuma",
+    "tv.subtitle": "Vipindi vya TV maarufu zaidi kwa sasa."
   }
 };
 
@@ -333,11 +384,60 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function readStorageJson(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return parsed ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+const RESTRICTED_MANGA_GENRES = new Set(["Hentai", "Erotica", "Ecchi"]);
+
+function isFamilySafeAnime(anime) {
+  if (!familyMode) return true;
+  if (!anime || typeof anime !== "object") return false;
+
+  const rating = String(anime.rating || "").toLowerCase();
+  if (
+    rating.includes("pg-13") ||
+    rating.includes("r -") ||
+    rating.includes("r+") ||
+    rating.includes("rx") ||
+    rating.includes("17+") ||
+    rating.includes("nudity") ||
+    rating.includes("hentai")
+  ) {
+    return false;
+  }
+
+  const genreNames = [...(anime.genres || []), ...(anime.themes || [])]
+    .map(g => String(g?.name || "").trim());
+  return !genreNames.some(name => RESTRICTED_MANGA_GENRES.has(name));
+}
+
+function isFamilySafeManga(manga) {
+  if (!familyMode) return true;
+  if (!manga || typeof manga !== "object") return false;
+
+  const genreNames = [
+    ...(manga.genres || []),
+    ...(manga.themes || []),
+    ...(manga.demographics || [])
+  ].map(g => String(g?.name || "").trim());
+
+  return !genreNames.some(name => RESTRICTED_MANGA_GENRES.has(name));
+}
+
 // =========================
 // 🔐 AUTH HELPERS
 // =========================
 function getUsers() {
-  return JSON.parse(localStorage.getItem("hikariUsers")) || [];
+  const users = readStorageJson("hikariUsers", []);
+  return Array.isArray(users) ? users : [];
 }
 
 function saveUsers(users) {
@@ -418,8 +518,10 @@ if (isLoginPage) {
 
 if (isSettingsPage) {
   const settingsForm = document.getElementById("settingsForm");
+  const authEntryActions = document.getElementById("authEntryActions");
   const learningModeInput = document.getElementById("settingLearningMode");
   const trailersInput = document.getElementById("settingTrailers");
+  const familyModeInput = document.getElementById("settingFamilyMode");
   const lightThemeInput = document.getElementById("settingLightTheme");
   const languageSelect = document.getElementById("settingLanguage");
   const profileEmail = document.getElementById("profileEmail");
@@ -435,11 +537,25 @@ if (isSettingsPage) {
 
   const user = getCurrentUser();
   const email = user?.email || "";
+  const isAuthed = Boolean(email);
   const profileKey = email ? `hikariProfile:${email}` : null;
   let avatarDataUrl = "";
 
+  if (!isAuthed) {
+    if (settingsForm) settingsForm.style.display = "none";
+    if (authEntryActions) authEntryActions.hidden = false;
+    if (settingsMessage) {
+      settingsMessage.classList.remove("error", "success");
+      settingsMessage.textContent = "Log in or create an account to manage app settings.";
+    }
+    return;
+  }
+
+  if (authEntryActions) authEntryActions.hidden = true;
+
   learningModeInput.checked = learningMode;
   trailersInput.checked = showTrailers;
+  familyModeInput.checked = familyMode;
   lightThemeInput.checked = currentTheme === "light";
   languageSelect.value = currentLanguage;
 
@@ -508,6 +624,8 @@ if (isSettingsPage) {
     event.preventDefault();
     localStorage.setItem("learningMode", learningModeInput.checked);
     localStorage.setItem("showTrailers", trailersInput.checked);
+    localStorage.setItem("familyMode", familyModeInput.checked);
+    familyMode = familyModeInput.checked;
     currentTheme = lightThemeInput.checked ? "light" : "dark";
     localStorage.setItem("theme", currentTheme);
     applyTheme(currentTheme);
@@ -607,7 +725,8 @@ if (isHome) {
       if (!res.ok) throw new Error(`API request failed: ${res.status}`);
 
       const data = await res.json();
-      const animeList = Array.isArray(data.data) ? data.data : [];
+      const animeListRaw = Array.isArray(data.data) ? data.data : [];
+      const animeList = animeListRaw.filter(isFamilySafeAnime);
 
       displayAnime(animeList);
 
@@ -680,7 +799,8 @@ if (isHome) {
   }
 
   function displayAnime(list) {
-    const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+    const favoritesRaw = readStorageJson("favorites", []);
+    const favorites = Array.isArray(favoritesRaw) ? favoritesRaw : [];
     grid.innerHTML = "";
 
     list.forEach(anime => {
@@ -801,7 +921,8 @@ if (isTrending) {
       if (!res.ok) throw new Error(`API request failed: ${res.status}`);
 
       const data = await res.json();
-      const list = Array.isArray(data.data) ? data.data : [];
+      const listRaw = Array.isArray(data.data) ? data.data : [];
+      const list = listRaw.filter(isFamilySafeAnime);
 
       displayTrending(list);
       setupTrendingPagination(data.pagination);
@@ -819,7 +940,8 @@ if (isTrending) {
   }
 
   function displayTrending(list) {
-    const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+    const favoritesRaw = readStorageJson("favorites", []);
+    const favorites = Array.isArray(favoritesRaw) ? favoritesRaw : [];
     grid.innerHTML = "";
 
     list.forEach(anime => {
@@ -962,8 +1084,10 @@ if (isUpcoming) {
 
       const animeList = animeListRaw.map(a => ({ ...a, type: "anime" }));
       const mangaList = mangaListRaw.map(m => ({ ...m, type: "manga" }));
+      const filteredAnimeList = animeList.filter(isFamilySafeAnime);
+      const filteredMangaList = mangaList.filter(isFamilySafeManga);
 
-      const combined = [...animeList, ...mangaList]
+      const combined = [...filteredAnimeList, ...filteredMangaList]
         .map(item => ({ item, start: parseStartDate(item) }))
         .sort((a, b) => {
           const at = a.start ? a.start.getTime() : Number.POSITIVE_INFINITY;
@@ -989,7 +1113,8 @@ if (isUpcoming) {
   }
 
   function displayUpcoming(list) {
-    const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+    const favoritesRaw = readStorageJson("favorites", []);
+    const favorites = Array.isArray(favoritesRaw) ? favoritesRaw : [];
     grid.innerHTML = "";
 
     list.forEach(entry => {
@@ -1113,6 +1238,10 @@ if (isDetails) {
 
       const data = await res.json();
       const anime = data.data;
+      if (!isFamilySafeAnime(anime)) {
+        details.innerHTML = "<h2 class='loading'>This title is hidden by Family Mode.</h2>";
+        return;
+      }
 
       const titleBlock = learningMode
         ? `
@@ -1154,7 +1283,8 @@ if (isFavorites) {
   loadFavorites();
 
   async function loadFavorites() {
-    const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+    const favoritesRaw = readStorageJson("favorites", []);
+    const favorites = Array.isArray(favoritesRaw) ? favoritesRaw : [];
 
     if (favorites.length === 0) {
       favGrid.innerHTML = "<h2>No favorites yet 😢</h2>";
@@ -1168,6 +1298,7 @@ if (isFavorites) {
       if (!res.ok) continue;
       const data = await res.json();
       const anime = data.data;
+      if (!isFamilySafeAnime(anime)) continue;
 
       html += `
         <div class="card">
@@ -1179,7 +1310,7 @@ if (isFavorites) {
       `;
     }
 
-    favGrid.innerHTML = html;
+    favGrid.innerHTML = html || "<h2>All favorites are hidden by Family Mode.</h2>";
   }
 }
 
@@ -1187,7 +1318,8 @@ if (isFavorites) {
 // ⭐ FAVORITES
 // =========================
 function toggleFavorite(id) {
-  let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+  const favoritesRaw = readStorageJson("favorites", []);
+  let favorites = Array.isArray(favoritesRaw) ? favoritesRaw : [];
 
   if (favorites.includes(id)) {
     favorites = favorites.filter(f => f !== id);
@@ -1257,7 +1389,8 @@ if (isManga) {
       if (!res.ok) throw new Error(`API request failed: ${res.status}`);
 
       const data = await res.json();
-      const mangaList = Array.isArray(data.data) ? data.data : [];
+      const mangaListRaw = Array.isArray(data.data) ? data.data : [];
+      const mangaList = mangaListRaw.filter(isFamilySafeManga);
       displayManga(mangaList);
     } catch (error) {
       grid.innerHTML = "<h2 class='loading'>Could not load manga. Please try again.</h2>";
@@ -1361,6 +1494,10 @@ if (isMangaDetails) {
 
       const data = await res.json();
       const manga = data.data;
+      if (!isFamilySafeManga(manga)) {
+        container.innerHTML = "<h2 class='loading'>This title is hidden by Family Mode.</h2>";
+        return;
+      }
 
       const titleBlock = learningMode
         ? `
@@ -1395,5 +1532,90 @@ if (isMangaDetails) {
 // =========================
 function viewMangaDetails(id) {
   window.location.href = `manga-details.html?id=${id}`;
+}
+
+// =========================
+// 🎥 TRENDING MOVIES PAGE
+// =========================
+if (isMoviesPage) {
+  const grid = document.getElementById("moviesGrid");
+
+  fetchTrendingMovies();
+
+  async function fetchTrendingMovies() {
+    try {
+      grid.innerHTML = "<h2 class='loading'>Loading trending movies... ⏳</h2>";
+      const res = await fetch("https://itunes.apple.com/us/rss/topmovies/limit=40/json");
+      if (!res.ok) throw new Error(`Movies request failed: ${res.status}`);
+      const json = await res.json();
+      const list = Array.isArray(json?.feed?.entry) ? json.feed.entry : [];
+      renderMediaCards(list, "movie");
+    } catch (error) {
+      grid.innerHTML = "<h2 class='loading'>Could not load movies. Please try again.</h2>";
+      console.error(error);
+    }
+  }
+}
+
+// =========================
+// 📺 TRENDING TV SHOWS PAGE
+// =========================
+if (isTvShowsPage) {
+  const grid = document.getElementById("tvShowsGrid");
+
+  fetchTrendingTvShows();
+
+  async function fetchTrendingTvShows() {
+    try {
+      grid.innerHTML = "<h2 class='loading'>Loading trending TV shows... ⏳</h2>";
+      const res = await fetch("https://itunes.apple.com/us/rss/toptvepisodes/limit=40/json");
+      if (!res.ok) throw new Error(`TV shows request failed: ${res.status}`);
+      const json = await res.json();
+      const list = Array.isArray(json?.feed?.entry) ? json.feed.entry : [];
+      renderMediaCards(list, "tv");
+    } catch (error) {
+      grid.innerHTML = "<h2 class='loading'>Could not load TV shows. Please try again.</h2>";
+      console.error(error);
+    }
+  }
+}
+
+function renderMediaCards(list, mediaType) {
+  const targetId = mediaType === "movie" ? "moviesGrid" : "tvShowsGrid";
+  const grid = document.getElementById(targetId);
+  if (!grid) return;
+  if (!list.length) {
+    grid.innerHTML = "<h2 class='loading'>No results found.</h2>";
+    return;
+  }
+
+  grid.innerHTML = "";
+
+  list.forEach(item => {
+    const title = item?.["im:name"]?.label || "Untitled";
+    const image =
+      item?.["im:image"]?.[2]?.label ||
+      item?.["im:image"]?.[1]?.label ||
+      item?.["im:image"]?.[0]?.label ||
+      "";
+    const release = item?.["im:releaseDate"]?.attributes?.label || item?.["im:releaseDate"]?.label || "Unknown";
+    const category = item?.category?.attributes?.label || (mediaType === "movie" ? "Movie" : "TV Show");
+    const summary = item?.summary?.label || "No description available.";
+    const link = Array.isArray(item?.link)
+      ? item.link[0]?.attributes?.href
+      : item?.link?.attributes?.href;
+
+    const card = document.createElement("div");
+    card.classList.add("card");
+    card.innerHTML = `
+      <img src="${escapeHtml(image)}" alt="${escapeHtml(title)} poster" />
+      <h3>${escapeHtml(title)}</h3>
+      <p><strong>Category:</strong> ${escapeHtml(category)}</p>
+      <p><strong>Release:</strong> ${escapeHtml(release)}</p>
+      <p>${escapeHtml(summary.slice(0, 160))}${summary.length > 160 ? "..." : ""}</p>
+      ${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer"><button type="button">Open</button></a>` : ""}
+    `;
+    grid.appendChild(card);
+  });
 }
 

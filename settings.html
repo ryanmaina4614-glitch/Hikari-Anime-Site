@@ -19,9 +19,9 @@
     <a href="upcoming.html" data-i18n="nav.upcoming">Upcoming ⏳</a>
     <a href="anime.html" data-i18n="nav.anime">Anime 🎬</a>
     <a href="manga.html" data-i18n="nav.manga">Manga 📚</a>
+    <a href="movies.html" data-i18n="nav.movies">Movies 🎥</a>
+    <a href="tv-shows.html" data-i18n="nav.tvShows">TV Shows 📺</a>
     <a href="favorites.html" data-i18n="nav.favorites">Favorites ⭐</a>
-    <a href="login.html" data-i18n="nav.login">Login</a>
-    <a href="signup.html" data-i18n="nav.signup">Sign Up</a>
     <a href="settings.html" data-i18n="nav.settings">Settings</a>
   </div>
 </nav>
@@ -30,6 +30,11 @@
   <div class="settings-card">
     <h2 data-i18n="settings.title">Settings</h2>
     <p class="settings-subtitle" data-i18n="settings.subtitle">Customize your Hikari Anime experience.</p>
+
+    <div class="settings-actions" id="authEntryActions" hidden>
+      <a href="login.html"><button type="button">Login</button></a>
+      <a href="signup.html"><button type="button">Sign Up</button></a>
+    </div>
 
     <form id="settingsForm" class="settings-form">
       <div class="profile-section" aria-label="Profile settings">
@@ -66,6 +71,11 @@
       <label class="settings-toggle">
         <input type="checkbox" id="settingTrailers">
         <span data-i18n="settings.trailers">Show trailer preview on anime cards</span>
+      </label>
+
+      <label class="settings-toggle">
+        <input type="checkbox" id="settingFamilyMode">
+        <span data-i18n="settings.familyMode">Enable Family Mode (hide age-restricted content)</span>
       </label>
 
       <label class="settings-toggle">
