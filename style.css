@@ -287,11 +287,17 @@ body {
   height: 350px;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: flex-end;
   padding: 20px;
   overflow: hidden;
   border-bottom: 1px solid rgba(95, 139, 255, 0.25);
+}
+
+#moviesHero,
+#tvShowsHero {
+  background-position: center 20%;
 }
 
 .hero::before {
@@ -352,6 +358,16 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 20px;
   padding: 20px;
+}
+
+.grid > .section-title {
+  grid-column: 1 / -1;
+  margin: 6px 0 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  color: var(--text-main);
 }
 
 /* CARD */

@@ -46,31 +46,9 @@ function applyNavAuthVisibility() {
 }
 
 function applyLoggedOutLinkGuard() {
-  const authed = isAuthenticated();
-  if (authed) return;
-
-  const protectedPages = new Set([
-    "anime.html",
-    "manga.html",
-    "movies.html",
-    "tv-shows.html",
-    "favorites.html",
-    "details.html",
-    "manga-details.html",
-    "trending.html",
-    "upcoming.html"
-  ]);
-
-  document.addEventListener("click", event => {
-    const a = event.target?.closest?.("a[href]");
-    if (!a) return;
-    const href = a.getAttribute("href") || "";
-    const dest = href.split("#")[0].split("?")[0];
-    if (protectedPages.has(dest)) {
-      event.preventDefault();
-      window.location.href = "login.html";
-    }
-  });
+  // Browsing is allowed while logged out.
+  // Keep this hook for future policy changes.
+  return;
 }
 
 function getCurrentUser() {
@@ -82,19 +60,11 @@ function getCurrentUser() {
   }
 }
 
-// Only allow landing/login/signup while logged out
-(() => {
-  const authed = isAuthenticated();
-  const page = getCurrentPageName().toLowerCase();
-  const allowlist = new Set(["index.html", "login.html", "signup.html", "settings.html"]);
-  if (!authed && !allowlist.has(page)) {
-    window.location.replace("index.html");
-  }
-})();
+// Logged-out users can browse all pages.
 
 // Page detection
 const isHome = document.getElementById("grid");
-const isTrending = document.getElementById("trendingGrid");
+const isTrending = document.getElementById("trendingAnimeGrid");
 const isUpcoming = document.getElementById("upcomingGrid");
 const isDetails = document.getElementById("details");
 const isFavorites = document.getElementById("favGrid");
@@ -139,6 +109,8 @@ const translations = {
     "home.whatYouCanDo": "What you can do",
     "home.infoOne": "Use the Anime page for search, top lists, favorites, and learning mode.",
     "home.infoTwo": "Use the Settings page to control theme, trailers, and account preferences.",
+    "quick.trendingAnime": "Trending Anime",
+    "quick.upcomingReleases": "Upcoming Releases",
     "anime.search": "Search anime...",
     "manga.search": "Search manga...",
     "anime.learningModeButton": "🇯🇵 Learning Mode",
@@ -187,6 +159,8 @@ const translations = {
     "home.whatYouCanDo": "できること",
     "home.infoOne": "Animeページでは検索、ランキング、お気に入り、学習モードが使えます。",
     "home.infoTwo": "Settingsページではテーマ、トレーラー、アカウント設定を変更できます。",
+    "quick.trendingAnime": "人気アニメ",
+    "quick.upcomingReleases": "今後のリリース",
     "anime.search": "アニメを検索...",
     "manga.search": "マンガを検索...",
     "anime.learningModeButton": "🇯🇵 学習モード",
@@ -235,6 +209,8 @@ const translations = {
     "home.whatYouCanDo": "Que puedes hacer",
     "home.infoOne": "Usa la pagina Anime para buscar, ver rankings, favoritos y modo aprendizaje.",
     "home.infoTwo": "Usa Configuracion para cambiar tema, avances y preferencias de cuenta.",
+    "quick.trendingAnime": "Anime en tendencia",
+    "quick.upcomingReleases": "Proximos estrenos",
     "anime.search": "Buscar anime...",
     "manga.search": "Buscar manga...",
     "anime.learningModeButton": "🇯🇵 Modo Aprendizaje",
@@ -283,6 +259,8 @@ const translations = {
     "home.whatYouCanDo": "Ce que vous pouvez faire",
     "home.infoOne": "Utilisez la page Anime pour la recherche, les tops, les favoris et le mode apprentissage.",
     "home.infoTwo": "Utilisez Parametres pour gerer le theme, les bandes-annonces et le compte.",
+    "quick.trendingAnime": "Anime tendance",
+    "quick.upcomingReleases": "Sorties a venir",
     "anime.search": "Rechercher un anime...",
     "manga.search": "Rechercher un manga...",
     "anime.learningModeButton": "🇯🇵 Mode Apprentissage",
@@ -331,6 +309,8 @@ const translations = {
     "home.whatYouCanDo": "Unachoweza kufanya",
     "home.infoOne": "Tumia ukurasa wa Anime kwa utafutaji, orodha bora, vipendwa na hali ya kujifunza.",
     "home.infoTwo": "Tumia Mipangilio kubadilisha mandhari, trela na mapendeleo ya akaunti.",
+    "quick.trendingAnime": "Anime Zinazovuma",
+    "quick.upcomingReleases": "Zinazokuja Hivi Karibuni",
     "anime.search": "Tafuta anime...",
     "manga.search": "Tafuta manga...",
     "anime.learningModeButton": "🇯🇵 Hali ya Kujifunza",
@@ -395,6 +375,53 @@ function readStorageJson(key, fallback) {
   }
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function formatFetchError(error) {
+  if (error?.name === "AbortError") {
+    return "Request timed out. Please check your connection and try again.";
+  }
+  return "Service is temporarily unavailable. Please try again.";
+}
+
+async function fetchJsonWithRetry(
+  url,
+  {
+    retries = 2,
+    timeoutMs = 12000,
+    retryDelayMs = 700,
+    requestName = "Request"
+  } = {}
+) {
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) {
+        const err = new Error(`${requestName} failed with status ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      return await res.json();
+    } catch (error) {
+      lastError = error;
+      const isLastAttempt = attempt === retries;
+      if (isLastAttempt) break;
+      await sleep(retryDelayMs * (attempt + 1));
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw lastError || new Error(`${requestName} failed`);
+}
+
 const RESTRICTED_MANGA_GENRES = new Set(["Hentai", "Erotica", "Ecchi"]);
 
 function isFamilySafeAnime(anime) {
@@ -432,6 +459,52 @@ function isFamilySafeManga(manga) {
   return !genreNames.some(name => RESTRICTED_MANGA_GENRES.has(name));
 }
 
+function normalizeItunesEntry(item, type) {
+  const title = item?.["im:name"]?.label || "Untitled";
+  const imageUrl =
+    item?.["im:image"]?.[2]?.label ||
+    item?.["im:image"]?.[1]?.label ||
+    item?.["im:image"]?.[0]?.label ||
+    "";
+  const releaseDate =
+    item?.["im:releaseDate"]?.attributes?.label ||
+    item?.["im:releaseDate"]?.label ||
+    null;
+  const category = item?.category?.attributes?.label || (type === "movie" ? "Movie" : "TV Show");
+  const synopsis = item?.summary?.label || "No description available.";
+  const link = Array.isArray(item?.link)
+    ? item?.link?.[0]?.attributes?.href
+    : item?.link?.attributes?.href;
+
+  return {
+    type,
+    title,
+    title_japanese: "",
+    synopsis,
+    score: null,
+    genres: [{ name: category }],
+    trailer: null,
+    url: link || "",
+    releaseDate,
+    images: {
+      jpg: {
+        image_url: imageUrl,
+        large_image_url: imageUrl
+      },
+      webp: {
+        image_url: imageUrl
+      }
+    }
+  };
+}
+
+function getHighResItunesImage(url) {
+  if (typeof url !== "string" || !url) return "";
+  return url
+    .replace(/\/\d+x\d+bb\./, "/1200x1200bb.")
+    .replace(/\/\d+x\d+-\d+\./, "/1200x1200-999.");
+}
+
 // =========================
 // 🔐 AUTH HELPERS
 // =========================
@@ -451,6 +524,11 @@ function setAuthMessage(el, message, isError = false) {
   el.classList.toggle("success", !isError);
 }
 
+function isValidEmail(email) {
+  if (typeof email !== "string") return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 if (isSignupPage) {
   const signupForm = document.getElementById("signupForm");
   const signupMessage = document.getElementById("signupMessage");
@@ -461,9 +539,18 @@ if (isSignupPage) {
     const name = signupForm.name.value.trim();
     const email = signupForm.email.value.trim().toLowerCase();
     const password = signupForm.password.value;
+    const trimmedPassword = password.trim();
 
     if (!name || !email || !password) {
       setAuthMessage(signupMessage, "Please fill in all fields.", true);
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setAuthMessage(signupMessage, "Please enter a valid email address.", true);
+      return;
+    }
+    if (trimmedPassword.length < 6) {
+      setAuthMessage(signupMessage, "Password must be at least 6 characters.", true);
       return;
     }
 
@@ -495,6 +582,14 @@ if (isLoginPage) {
 
     const email = loginForm.email.value.trim().toLowerCase();
     const password = loginForm.password.value;
+    if (!email || !password) {
+      setAuthMessage(loginMessage, "Please enter your email and password.", true);
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setAuthMessage(loginMessage, "Please enter a valid email address.", true);
+      return;
+    }
 
     const users = getUsers();
     const user = users.find(u => u.email === email && u.password === password);
@@ -548,10 +643,8 @@ if (isSettingsPage) {
       settingsMessage.classList.remove("error", "success");
       settingsMessage.textContent = "Log in or create an account to manage app settings.";
     }
-    return;
-  }
-
-  if (authEntryActions) authEntryActions.hidden = true;
+  } else {
+    if (authEntryActions) authEntryActions.hidden = true;
 
   learningModeInput.checked = learningMode;
   trailersInput.checked = showTrailers;
@@ -666,6 +759,7 @@ if (isSettingsPage) {
     setAuthMessage(settingsMessage, "Logged out.");
     window.location.href = "index.html";
   });
+  }
 }
 
 // =========================
@@ -721,10 +815,7 @@ if (isHome) {
         ? `${BASE_URL}/anime?${params.toString()}`
         : `${BASE_URL}/top/anime?${params.toString()}`;
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`API request failed: ${res.status}`);
-
-      const data = await res.json();
+      const data = await fetchJsonWithRetry(url, { requestName: "Anime feed" });
       const animeListRaw = Array.isArray(data.data) ? data.data : [];
       const animeList = animeListRaw.filter(isFamilySafeAnime);
 
@@ -735,7 +826,8 @@ if (isHome) {
 
       setupPagination(data.pagination);
     } catch (error) {
-      grid.innerHTML = `<h2 class="loading">Could not load anime. Please try again.</h2>`;
+      const message = formatFetchError(error);
+      grid.innerHTML = `<h2 class="loading">${message}</h2><button type="button" onclick="location.reload()">Retry</button>`;
       pagination.innerHTML = "";
       const hero = document.getElementById("hero");
       if (hero) {
@@ -764,9 +856,7 @@ if (isHome) {
     genreChips.innerHTML = `<span class="loading" style="padding: 6px 0;">Loading genres...</span>`;
 
     try {
-      const res = await fetch(`${BASE_URL}/genres/anime`);
-      if (!res.ok) throw new Error(`Genre request failed: ${res.status}`);
-      const data = await res.json();
+      const data = await fetchJsonWithRetry(`${BASE_URL}/genres/anime`, { requestName: "Anime genres" });
       const genres = Array.isArray(data.data) ? data.data : [];
 
       genres.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
@@ -793,7 +883,7 @@ if (isHome) {
       updateGenreSelectionUI();
     } catch (error) {
       console.error(error);
-      genreChips.innerHTML = `<span class="loading" style="padding: 6px 0;">Could not load genres.</span>`;
+      genreChips.innerHTML = `<span class="loading" style="padding: 6px 0;">Could not load genres right now.</span>`;
       if (clearGenreBtn) clearGenreBtn.hidden = true;
     }
   }
@@ -802,6 +892,10 @@ if (isHome) {
     const favoritesRaw = readStorageJson("favorites", []);
     const favorites = Array.isArray(favoritesRaw) ? favoritesRaw : [];
     grid.innerHTML = "";
+    if (!list.length) {
+      grid.innerHTML = "<h2 class='loading'>No anime found for this filter.</h2>";
+      return;
+    }
 
     list.forEach(anime => {
       const isFav = favorites.includes(anime.mal_id);
@@ -902,7 +996,9 @@ if (isHome) {
 // 🔥 TRENDING PAGE
 // =========================
 if (isTrending) {
-  const grid = document.getElementById("trendingGrid");
+  const animeGrid = document.getElementById("trendingAnimeGrid");
+  const moviesGrid = document.getElementById("trendingMoviesGrid");
+  const tvGrid = document.getElementById("trendingTvGrid");
   const hero = document.getElementById("trendingHero");
 
   let trendingPage = 1;
@@ -915,22 +1011,38 @@ if (isTrending) {
 
   async function fetchTrending() {
     try {
-      grid.innerHTML = `<h2 class="loading">Loading trending anime... ⏳</h2>`;
+      animeGrid.innerHTML = `<h2 class="loading">Loading trending anime... ⏳</h2>`;
+      moviesGrid.innerHTML = `<h2 class="loading">Loading trending movies... ⏳</h2>`;
+      tvGrid.innerHTML = `<h2 class="loading">Loading trending TV shows... ⏳</h2>`;
 
-      const res = await fetch(`${BASE_URL}/top/anime?filter=airing&page=${trendingPage}`);
-      if (!res.ok) throw new Error(`API request failed: ${res.status}`);
-
-      const data = await res.json();
-      const listRaw = Array.isArray(data.data) ? data.data : [];
+      const [animeJson, moviesJson, tvJson] = await Promise.all([
+        fetchJsonWithRetry(`${BASE_URL}/top/anime?filter=airing&page=${trendingPage}`, {
+          requestName: "Trending anime"
+        }),
+        fetchJsonWithRetry("https://itunes.apple.com/us/rss/topmovies/limit=20/json", {
+          requestName: "Trending movies"
+        }).catch(() => ({ feed: { entry: [] } })),
+        fetchJsonWithRetry("https://itunes.apple.com/us/rss/toptvepisodes/limit=20/json", {
+          requestName: "Trending TV shows"
+        }).catch(() => ({ feed: { entry: [] } }))
+      ]);
+      const listRaw = Array.isArray(animeJson.data) ? animeJson.data : [];
       const list = listRaw.filter(isFamilySafeAnime);
+      const movieEntries = (Array.isArray(moviesJson?.feed?.entry) ? moviesJson.feed.entry : [])
+        .map(item => normalizeItunesEntry(item, "movie"));
+      const tvEntries = (Array.isArray(tvJson?.feed?.entry) ? tvJson.feed.entry : [])
+        .map(item => normalizeItunesEntry(item, "tv"));
 
-      displayTrending(list);
-      setupTrendingPagination(data.pagination);
+      displayTrending(list, movieEntries, tvEntries);
+      setupTrendingPagination(animeJson.pagination);
 
       heroList = list.slice(0, 5);
       startTrendingHeroSlider();
     } catch (error) {
-      grid.innerHTML = `<h2 class="loading">Could not load trending anime. Please try again.</h2>`;
+      const message = formatFetchError(error);
+      animeGrid.innerHTML = `<h2 class="loading">${message}</h2><button type="button" onclick="location.reload()">Retry</button>`;
+      moviesGrid.innerHTML = `<h2 class="loading">${message}</h2><button type="button" onclick="location.reload()">Retry</button>`;
+      tvGrid.innerHTML = `<h2 class="loading">${message}</h2><button type="button" onclick="location.reload()">Retry</button>`;
       pagination.innerHTML = "";
       if (hero) {
         hero.style.backgroundImage = "none";
@@ -939,12 +1051,17 @@ if (isTrending) {
     }
   }
 
-  function displayTrending(list) {
+  function displayTrending(list, movieEntries = [], tvEntries = []) {
     const favoritesRaw = readStorageJson("favorites", []);
     const favorites = Array.isArray(favoritesRaw) ? favoritesRaw : [];
-    grid.innerHTML = "";
+    animeGrid.innerHTML = "";
+    moviesGrid.innerHTML = "";
+    tvGrid.innerHTML = "";
+    if (!list.length) animeGrid.innerHTML = "<h2 class='loading'>No trending anime available right now.</h2>";
+    if (!movieEntries.length) moviesGrid.innerHTML = "<h2 class='loading'>No trending movies available right now.</h2>";
+    if (!tvEntries.length) tvGrid.innerHTML = "<h2 class='loading'>No trending TV shows available right now.</h2>";
 
-    list.forEach(anime => {
+    list.forEach((anime, index) => {
       const isFav = favorites.includes(anime.mal_id);
 
       const title = learningMode
@@ -966,6 +1083,7 @@ if (isTrending) {
         </div>
 
         ${title}
+        <p>#${index + 1} in Anime</p>
         <p>⭐ ${anime.score || "N/A"}</p>
         <p>${anime.genres.map(g => g.name).join(", ")}</p>
 
@@ -975,7 +1093,45 @@ if (isTrending) {
         </button>
       `;
 
-      grid.appendChild(card);
+      animeGrid.appendChild(card);
+    });
+
+    movieEntries.forEach((entry, index) => {
+      const card = document.createElement("div");
+      card.classList.add("card");
+      const imageUrl = entry?.images?.jpg?.image_url || "";
+
+      card.innerHTML = `
+        <div class="card-media">
+          <img src="${imageUrl}" alt="${escapeHtml(entry.title)} poster" />
+        </div>
+        <h3>${escapeHtml(entry.title)}</h3>
+        <p>#${index + 1} in Movies</p>
+        <p>⭐ N/A</p>
+        <p>${escapeHtml((entry.genres || []).map(g => g.name).join(", "))}</p>
+        ${entry.url ? `<a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer"><button type="button">Open</button></a>` : ""}
+      `;
+
+      moviesGrid.appendChild(card);
+    });
+
+    tvEntries.forEach((entry, index) => {
+      const card = document.createElement("div");
+      card.classList.add("card");
+      const imageUrl = entry?.images?.jpg?.image_url || "";
+
+      card.innerHTML = `
+        <div class="card-media">
+          <img src="${imageUrl}" alt="${escapeHtml(entry.title)} poster" />
+        </div>
+        <h3>${escapeHtml(entry.title)}</h3>
+        <p>#${index + 1} in TV Shows</p>
+        <p>⭐ N/A</p>
+        <p>${escapeHtml((entry.genres || []).map(g => g.name).join(", "))}</p>
+        ${entry.url ? `<a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer"><button type="button">Open</button></a>` : ""}
+      `;
+
+      tvGrid.appendChild(card);
     });
   }
 
@@ -1049,6 +1205,12 @@ if (isUpcoming) {
   fetchUpcoming();
 
   function parseStartDate(item) {
+    if (item?.type === "movie" || item?.type === "tv") {
+      const rawMovieDate = item?.releaseDate;
+      if (!rawMovieDate) return null;
+      const d = new Date(rawMovieDate);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
     const raw = item?.type === "manga" ? item?.published?.from : item?.aired?.from;
     if (!raw) return null;
     const d = new Date(raw);
@@ -1069,25 +1231,34 @@ if (isUpcoming) {
       grid.innerHTML = `<h2 class="loading">Loading upcoming releases... ⏳</h2>`;
       pagination.innerHTML = "";
 
-      const [animeRes, mangaRes] = await Promise.all([
-        fetch(`${BASE_URL}/seasons/upcoming?page=${upcomingAnimePage}`),
-        fetch(`${BASE_URL}/top/manga?filter=upcoming&page=${upcomingMangaPage}`)
+      const [animeJson, mangaJson, moviesJson, tvJson] = await Promise.all([
+        fetchJsonWithRetry(`${BASE_URL}/seasons/upcoming?page=${upcomingAnimePage}`, {
+          requestName: "Upcoming anime"
+        }),
+        fetchJsonWithRetry(`${BASE_URL}/top/manga?filter=upcoming&page=${upcomingMangaPage}`, {
+          requestName: "Upcoming manga"
+        }),
+        fetchJsonWithRetry("https://itunes.apple.com/us/rss/topmovies/limit=20/json", {
+          requestName: "Trending movies"
+        }).catch(() => ({ feed: { entry: [] } })),
+        fetchJsonWithRetry("https://itunes.apple.com/us/rss/toptvepisodes/limit=20/json", {
+          requestName: "Trending TV shows"
+        }).catch(() => ({ feed: { entry: [] } }))
       ]);
-
-      if (!animeRes.ok) throw new Error(`Upcoming anime request failed: ${animeRes.status}`);
-      if (!mangaRes.ok) throw new Error(`Upcoming manga request failed: ${mangaRes.status}`);
-
-      const [animeJson, mangaJson] = await Promise.all([animeRes.json(), mangaRes.json()]);
 
       const animeListRaw = Array.isArray(animeJson.data) ? animeJson.data : [];
       const mangaListRaw = Array.isArray(mangaJson.data) ? mangaJson.data : [];
 
       const animeList = animeListRaw.map(a => ({ ...a, type: "anime" }));
       const mangaList = mangaListRaw.map(m => ({ ...m, type: "manga" }));
+      const movieList = (Array.isArray(moviesJson?.feed?.entry) ? moviesJson.feed.entry : [])
+        .map(item => normalizeItunesEntry(item, "movie"));
+      const tvList = (Array.isArray(tvJson?.feed?.entry) ? tvJson.feed.entry : [])
+        .map(item => normalizeItunesEntry(item, "tv"));
       const filteredAnimeList = animeList.filter(isFamilySafeAnime);
       const filteredMangaList = mangaList.filter(isFamilySafeManga);
 
-      const combined = [...filteredAnimeList, ...filteredMangaList]
+      const combined = [...filteredAnimeList, ...filteredMangaList, ...movieList, ...tvList]
         .map(item => ({ item, start: parseStartDate(item) }))
         .sort((a, b) => {
           const at = a.start ? a.start.getTime() : Number.POSITIVE_INFINITY;
@@ -1105,7 +1276,8 @@ if (isUpcoming) {
         .slice(0, 5);
       startUpcomingHeroSlider();
     } catch (error) {
-      grid.innerHTML = `<h2 class="loading">Could not load upcoming releases. Please try again.</h2>`;
+      const message = formatFetchError(error);
+      grid.innerHTML = `<h2 class="loading">${message}</h2><button type="button" onclick="location.reload()">Retry</button>`;
       pagination.innerHTML = "";
       if (hero) hero.style.backgroundImage = "none";
       console.error(error);
@@ -1116,9 +1288,15 @@ if (isUpcoming) {
     const favoritesRaw = readStorageJson("favorites", []);
     const favorites = Array.isArray(favoritesRaw) ? favoritesRaw : [];
     grid.innerHTML = "";
+    if (!list.length) {
+      grid.innerHTML = "<h2 class='loading'>No upcoming releases available right now.</h2>";
+      return;
+    }
 
     list.forEach(entry => {
       const isAnime = entry.type === "anime";
+      const isManga = entry.type === "manga";
+      const isMovie = entry.type === "movie";
       const startDate = parseStartDate(entry);
 
       const title = learningMode
@@ -1145,7 +1323,7 @@ if (isUpcoming) {
         ${title}
 
         <div class="meta-row">
-          <span class="type-badge ${isAnime ? "anime" : "manga"}">${isAnime ? "Anime" : "Manga"}</span>
+          <span class="type-badge ${isAnime ? "anime" : isManga ? "manga" : isMovie ? "movie" : "tv"}">${isAnime ? "Anime" : isManga ? "Manga" : isMovie ? "Movie" : "TV Show"}</span>
           <span class="date-pill">📅 ${formatDate(startDate)}</span>
         </div>
 
@@ -1160,7 +1338,7 @@ if (isUpcoming) {
                 ${isFav ? "❤️" : "🤍"}
               </button>
             `
-            : `<a href="${entry.url}" target="_blank" rel="noopener noreferrer"><button type="button">Open</button></a>`
+            : `<a href="${escapeHtml(entry.url || "")}" target="_blank" rel="noopener noreferrer"><button type="button">Open</button></a>`
         }
       `;
 
@@ -1233,10 +1411,7 @@ if (isDetails) {
     try {
       details.innerHTML = "<h2 class='loading'>Loading... ⏳</h2>";
 
-      const res = await fetch(`${BASE_URL}/anime/${id}`);
-      if (!res.ok) throw new Error(`API request failed: ${res.status}`);
-
-      const data = await res.json();
+      const data = await fetchJsonWithRetry(`${BASE_URL}/anime/${id}`, { requestName: "Anime details" });
       const anime = data.data;
       if (!isFamilySafeAnime(anime)) {
         details.innerHTML = "<h2 class='loading'>This title is hidden by Family Mode.</h2>";
@@ -1268,7 +1443,7 @@ if (isDetails) {
       <button onclick="toggleFavorite(${anime.mal_id})">❤️ Toggle Favorite</button>
     `;
     } catch (error) {
-      details.innerHTML = "<h2 class='loading'>Could not load anime details.</h2>";
+      details.innerHTML = `<h2 class='loading'>${formatFetchError(error)}</h2><button type="button" onclick="location.reload()">Retry</button>`;
       console.error(error);
     }
   }
@@ -1291,26 +1466,43 @@ if (isFavorites) {
       return;
     }
 
-    let html = "";
+    const cards = [];
+    let failedCount = 0;
 
     for (let id of favorites) {
-      const res = await fetch(`${BASE_URL}/anime/${id}`);
-      if (!res.ok) continue;
-      const data = await res.json();
-      const anime = data.data;
-      if (!isFamilySafeAnime(anime)) continue;
+      try {
+        const data = await fetchJsonWithRetry(`${BASE_URL}/anime/${id}`, {
+          retries: 1,
+          requestName: "Favorite anime"
+        });
+        const anime = data.data;
+        if (!isFamilySafeAnime(anime)) continue;
 
-      html += `
+        cards.push(`
         <div class="card">
           <img src="${anime.images.jpg.image_url}" alt="${escapeHtml(anime.title)} cover image" />
           <h3>${anime.title}</h3>
           <button onclick="viewDetails(${anime.mal_id})">Details</button>
           <button onclick="toggleFavorite(${anime.mal_id})">❌ Remove</button>
         </div>
-      `;
+      `);
+      } catch {
+        failedCount += 1;
+      }
     }
 
-    favGrid.innerHTML = html || "<h2>All favorites are hidden by Family Mode.</h2>";
+    if (!cards.length) {
+      const message = failedCount > 0
+        ? "Could not load favorites right now."
+        : "All favorites are hidden by Family Mode.";
+      favGrid.innerHTML = `<h2>${message}</h2>`;
+      return;
+    }
+
+    favGrid.innerHTML = cards.join("");
+    if (failedCount > 0) {
+      favGrid.innerHTML += `<p class="loading">Some favorites could not be loaded due to a temporary API issue.</p>`;
+    }
   }
 }
 
@@ -1385,15 +1577,12 @@ if (isManga) {
         ? `${BASE_URL}/manga?${params.toString()}`
         : `${BASE_URL}/top/manga?${params.toString()}`;
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`API request failed: ${res.status}`);
-
-      const data = await res.json();
+      const data = await fetchJsonWithRetry(url, { requestName: "Manga feed" });
       const mangaListRaw = Array.isArray(data.data) ? data.data : [];
       const mangaList = mangaListRaw.filter(isFamilySafeManga);
       displayManga(mangaList);
     } catch (error) {
-      grid.innerHTML = "<h2 class='loading'>Could not load manga. Please try again.</h2>";
+      grid.innerHTML = `<h2 class='loading'>${formatFetchError(error)}</h2><button type="button" onclick="location.reload()">Retry</button>`;
       console.error(error);
     }
   }
@@ -1412,9 +1601,7 @@ if (isManga) {
     genreChips.innerHTML = `<span class="loading" style="padding: 6px 0;">Loading genres...</span>`;
 
     try {
-      const res = await fetch(`${BASE_URL}/genres/manga`);
-      if (!res.ok) throw new Error(`Genre request failed: ${res.status}`);
-      const data = await res.json();
+      const data = await fetchJsonWithRetry(`${BASE_URL}/genres/manga`, { requestName: "Manga genres" });
       const genres = Array.isArray(data.data) ? data.data : [];
 
       genres.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
@@ -1441,13 +1628,17 @@ if (isManga) {
       updateMangaGenreSelectionUI();
     } catch (error) {
       console.error(error);
-      genreChips.innerHTML = `<span class="loading" style="padding: 6px 0;">Could not load genres.</span>`;
+      genreChips.innerHTML = `<span class="loading" style="padding: 6px 0;">Could not load genres right now.</span>`;
       if (clearGenreBtn) clearGenreBtn.hidden = true;
     }
   }
 
   function displayManga(list) {
     grid.innerHTML = "";
+    if (!list.length) {
+      grid.innerHTML = "<h2 class='loading'>No manga found for this filter.</h2>";
+      return;
+    }
 
     list.forEach(manga => {
       const title = learningMode
@@ -1489,10 +1680,7 @@ if (isMangaDetails) {
     try {
       container.innerHTML = "<h2 class='loading'>Loading... ⏳</h2>";
 
-      const res = await fetch(`${BASE_URL}/manga/${id}`);
-      if (!res.ok) throw new Error(`API request failed: ${res.status}`);
-
-      const data = await res.json();
+      const data = await fetchJsonWithRetry(`${BASE_URL}/manga/${id}`, { requestName: "Manga details" });
       const manga = data.data;
       if (!isFamilySafeManga(manga)) {
         container.innerHTML = "<h2 class='loading'>This title is hidden by Family Mode.</h2>";
@@ -1521,7 +1709,7 @@ if (isMangaDetails) {
       </a>
     `;
     } catch (error) {
-      container.innerHTML = "<h2 class='loading'>Could not load manga details.</h2>";
+      container.innerHTML = `<h2 class='loading'>${formatFetchError(error)}</h2><button type="button" onclick="location.reload()">Retry</button>`;
       console.error(error);
     }
   }
@@ -1539,19 +1727,38 @@ function viewMangaDetails(id) {
 // =========================
 if (isMoviesPage) {
   const grid = document.getElementById("moviesGrid");
+  const hero = document.getElementById("moviesHero");
 
   fetchTrendingMovies();
 
   async function fetchTrendingMovies() {
     try {
       grid.innerHTML = "<h2 class='loading'>Loading trending movies... ⏳</h2>";
-      const res = await fetch("https://itunes.apple.com/us/rss/topmovies/limit=40/json");
-      if (!res.ok) throw new Error(`Movies request failed: ${res.status}`);
-      const json = await res.json();
+      const json = await fetchJsonWithRetry("https://itunes.apple.com/us/rss/topmovies/limit=40/json", {
+        requestName: "Movies feed"
+      });
       const list = Array.isArray(json?.feed?.entry) ? json.feed.entry : [];
+      if (hero && list.length) {
+        const top = list[0];
+        const title = top?.["im:name"]?.label || "Trending Movies";
+        const image =
+          top?.["im:image"]?.[2]?.label ||
+          top?.["im:image"]?.[1]?.label ||
+          top?.["im:image"]?.[0]?.label ||
+          "";
+        const subtitle = top?.summary?.label || "The most popular movies right now.";
+        const heroImage = getHighResItunesImage(image) || image;
+        if (heroImage) hero.style.backgroundImage = `url(${heroImage})`;
+        hero.innerHTML = `
+          <div class="hero-content fade">
+            <h2>${escapeHtml(title)}</h2>
+            <p>${escapeHtml(subtitle.slice(0, 140))}${subtitle.length > 140 ? "..." : ""}</p>
+          </div>
+        `;
+      }
       renderMediaCards(list, "movie");
     } catch (error) {
-      grid.innerHTML = "<h2 class='loading'>Could not load movies. Please try again.</h2>";
+      grid.innerHTML = `<h2 class='loading'>${formatFetchError(error)}</h2><button type="button" onclick="location.reload()">Retry</button>`;
       console.error(error);
     }
   }
@@ -1562,19 +1769,38 @@ if (isMoviesPage) {
 // =========================
 if (isTvShowsPage) {
   const grid = document.getElementById("tvShowsGrid");
+  const hero = document.getElementById("tvShowsHero");
 
   fetchTrendingTvShows();
 
   async function fetchTrendingTvShows() {
     try {
       grid.innerHTML = "<h2 class='loading'>Loading trending TV shows... ⏳</h2>";
-      const res = await fetch("https://itunes.apple.com/us/rss/toptvepisodes/limit=40/json");
-      if (!res.ok) throw new Error(`TV shows request failed: ${res.status}`);
-      const json = await res.json();
+      const json = await fetchJsonWithRetry("https://itunes.apple.com/us/rss/toptvepisodes/limit=40/json", {
+        requestName: "TV feed"
+      });
       const list = Array.isArray(json?.feed?.entry) ? json.feed.entry : [];
+      if (hero && list.length) {
+        const top = list[0];
+        const title = top?.["im:name"]?.label || "Trending TV Shows";
+        const image =
+          top?.["im:image"]?.[2]?.label ||
+          top?.["im:image"]?.[1]?.label ||
+          top?.["im:image"]?.[0]?.label ||
+          "";
+        const subtitle = top?.summary?.label || "The most popular TV shows right now.";
+        const heroImage = getHighResItunesImage(image) || image;
+        if (heroImage) hero.style.backgroundImage = `url(${heroImage})`;
+        hero.innerHTML = `
+          <div class="hero-content fade">
+            <h2>${escapeHtml(title)}</h2>
+            <p>${escapeHtml(subtitle.slice(0, 140))}${subtitle.length > 140 ? "..." : ""}</p>
+          </div>
+        `;
+      }
       renderMediaCards(list, "tv");
     } catch (error) {
-      grid.innerHTML = "<h2 class='loading'>Could not load TV shows. Please try again.</h2>";
+      grid.innerHTML = `<h2 class='loading'>${formatFetchError(error)}</h2><button type="button" onclick="location.reload()">Retry</button>`;
       console.error(error);
     }
   }
@@ -1585,7 +1811,8 @@ function renderMediaCards(list, mediaType) {
   const grid = document.getElementById(targetId);
   if (!grid) return;
   if (!list.length) {
-    grid.innerHTML = "<h2 class='loading'>No results found.</h2>";
+    const label = mediaType === "movie" ? "movies" : "TV shows";
+    grid.innerHTML = `<h2 class='loading'>No ${label} available right now.</h2>`;
     return;
   }
 
